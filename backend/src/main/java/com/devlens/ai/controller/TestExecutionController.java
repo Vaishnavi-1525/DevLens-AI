@@ -1,3 +1,4 @@
+
 package com.devlens.ai.controller;
 
 import com.devlens.ai.automation.TestExecutionResult;
@@ -10,6 +11,8 @@ import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/executions")
 public class TestExecutionController {
@@ -21,6 +24,7 @@ public class TestExecutionController {
         this.testExecutionService = testExecutionService;
     }
 
+    // Create a new execution request
     @PostMapping
     public ApiResponse<TestExecutionResult> createExecution(
             @Valid @RequestBody TestExecutionRequest request) {
@@ -35,6 +39,23 @@ public class TestExecutionController {
         );
     }
 
+    // Retrieve all execution records
+    @GetMapping
+    public ResponseEntity<ApiResponse<List<TestExecutionResult>>> getAllExecutions() {
+
+        List<TestExecutionResult> results =
+                testExecutionService.getAllExecutions();
+
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        true,
+                        "Execution history retrieved successfully",
+                        results
+                )
+        );
+    }
+
+    // Retrieve execution by ID
     @GetMapping("/{executionId}")
     public ResponseEntity<ApiResponse<TestExecutionResult>> getExecution(
             @PathVariable String executionId) {

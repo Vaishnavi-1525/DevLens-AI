@@ -4,6 +4,9 @@ import com.devlens.ai.automation.TestExecutionResult;
 import com.devlens.ai.automation.TestExecutionStatus;
 import com.devlens.ai.dto.TestExecutionRequest;
 
+import java.util.List;
+import java.util.ArrayList;
+
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
@@ -36,6 +39,11 @@ public class TestExecutionService {
         executions.put(result.getExecutionId(), result);
 
         return result;
+
+public List<TestExecutionResult> getAllExecutions() {
+
+    return new ArrayList<>(executions.values());
+}
     }
 
     public TestExecutionResult getExecution(String executionId) {
