@@ -1,16 +1,28 @@
 package com.devlens.ai.dto;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
+import java.util.List;
 
-public class TestRequest {
+public class TestPlanResponse {
 
-    @NotBlank(message = "Website URL is required")
     private String websiteUrl;
-
-    @NotBlank(message = "Testing instruction is required")
-    @Size(max = 2000, message = "Instruction cannot exceed 2000 characters")
     private String instruction;
+    private String status;
+    private List<String> testSteps;
+
+    public TestPlanResponse() {
+    }
+
+    public TestPlanResponse(
+            String websiteUrl,
+            String instruction,
+            String status,
+            List<String> testSteps) {
+
+        this.websiteUrl = websiteUrl;
+        this.instruction = instruction;
+        this.status = status;
+        this.testSteps = testSteps;
+    }
 
     public String getWebsiteUrl() {
         return websiteUrl;
@@ -26,5 +38,21 @@ public class TestRequest {
 
     public void setInstruction(String instruction) {
         this.instruction = instruction;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public List<String> getTestSteps() {
+        return testSteps;
+    }
+
+    public void setTestSteps(List<String> testSteps) {
+        this.testSteps = testSteps;
     }
 }

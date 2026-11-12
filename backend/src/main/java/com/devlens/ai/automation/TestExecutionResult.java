@@ -1,6 +1,7 @@
 package com.devlens.ai.automation;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class TestExecutionResult {
 
@@ -13,6 +14,7 @@ public class TestExecutionResult {
     private LocalDateTime startedAt;
     private LocalDateTime completedAt;
     private String summary;
+private List<String> approvedSteps;
 
     public TestExecutionResult() {
     }
@@ -88,4 +90,11 @@ public class TestExecutionResult {
     public void setSummary(String summary) {
         this.summary = summary;
     }
+public List<String> getApprovedSteps() {
+    return approvedSteps;
+}
+
+public void setApprovedSteps(List<String> approvedSteps) {
+    this.approvedSteps = approvedSteps;
+}
 }

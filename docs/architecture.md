@@ -1,3 +1,5 @@
+
+
 \# DevLens-AI – System Architecture
 
 
@@ -10,23 +12,27 @@ DevLens-AI follows a modular client-server architecture.
 
 
 
-The frontend communicates with the Spring Boot backend through REST APIs.
+The frontend is served by the Spring Boot application and communicates with backend REST APIs using JavaScript Fetch API.
 
 
 
-\## 2. Main Components
+The backend manages test planning, execution requests, browser automation, and execution results.
+
+
+
+\## 2. Technology Architecture
 
 
 
 \### Frontend
 
-\- HTML
+\- HTML5
 
-\- CSS
+\- CSS3
 
 \- Bootstrap 5
 
-\- JavaScript
+\- Vanilla JavaScript
 
 
 
@@ -34,139 +40,284 @@ The frontend communicates with the Spring Boot backend through REST APIs.
 
 \- Java 21
 
-\- Spring Boot
+\- Spring Boot 4.1.2
 
 \- Maven
 
-\- REST APIs
+\- Spring Web
 
+\- Spring Validation
 
 
-\### AI Test Planner
 
-\- Gemini API
+\### Browser Automation
 
-\- Natural-language instruction processing
+\- Playwright for Java 1.56.0
 
-\- Test scenario generation
+\- Chromium Headless Browser
 
 
 
-\### Automation Engine
+\### Planned Components
 
-\- Playwright for Java
+\- Gemini API for AI test planning
 
-\- Browser interaction
+\- PostgreSQL for persistent storage
 
-\- Test execution
+\- DBeaver for database management
 
-\- Screenshot and log capture
+\- Jira REST API for defect integration
 
 
 
-\### Database
+\## 3. Application Architecture
 
-\- PostgreSQL
 
-\- DBeaver
 
+```text
 
+User
 
-\### External Integration
+&#x20;|
 
-\- Jira REST API
+&#x20;v
 
+Web Dashboard
 
+(HTML + CSS + Bootstrap + JavaScript)
 
-\## 3. Application Workflow
+&#x20;|
 
+&#x20;| HTTP REST API
 
+&#x20;v
 
-1\. User enters a website URL and testing instruction.
+Spring Boot Application
 
-2\. Frontend sends the request to Spring Boot.
+&#x20;|
 
-3\. AI Test Planner converts the instruction into structured test steps.
+&#x20;+---- Controller Layer
 
-4\. User reviews and approves the test plan.
+&#x20;|       |
 
-5\. Playwright executes the approved steps.
+&#x20;|       +---- HealthController
 
-6\. Execution results and screenshots are collected.
+&#x20;|       +---- ProjectController
 
-7\. Failed scenarios are analyzed.
+&#x20;|       +---- TestPlanController
 
-8\. Bug reports are generated.
+&#x20;|       +---- TestExecutionController
 
-9\. Results are stored in PostgreSQL.
+&#x20;|
 
-10\. Approved bugs can be sent to Jira.
+&#x20;+---- Service Layer
 
+&#x20;|       |
 
+&#x20;|       +---- TestPlanService
 
-\## 4. Backend Package Structure
+&#x20;|       +---- TestExecutionService
 
+&#x20;|
 
+&#x20;+---- Automation Layer
 
-\- controller
+&#x20;|       |
 
-\- service
+&#x20;|       +---- PlaywrightService
 
-\- ai
+&#x20;|       +---- TestExecutionResult
 
-\- automation
+&#x20;|       +---- TestExecutionStatus
 
-\- bug
+&#x20;|
 
-\- entity
+&#x20;+---- DTO Layer
 
-\- repository
+&#x20;|
 
-\- config
+&#x20;+---- Configuration Layer
 
+&#x20;|
 
+&#x20;v
 
-\## 5. API Design
+Chromium Browser
 
+&#x20;|
 
+&#x20;v
 
-\- GET /api/health
+Target Website
 
-\- POST /api/tests/plan
+```
 
-\- POST /api/tests/execute
 
-\- GET /api/bugs
 
-\- GET /api/tests/history
+\## 4. Application Workflow
 
 
 
-\## 6. Security
+1\. User opens the DevLens-AI dashboard.
 
+2\. User enters a website URL and testing instructions.
 
+3\. Frontend sends a request to the Spring Boot backend.
 
-\- Validate user inputs.
+4\. TestPlanService currently returns predefined sample test steps.
 
-\- Restrict browser execution to authorized websites.
+5\. User reviews and approves the test steps.
 
-\- Protect API keys using environment variables.
+6\. Frontend submits the approved steps to the execution API.
 
-\- Prevent destructive browser actions.
+7\. TestExecutionService creates an execution record.
 
-\- Require approval before risky operations.
+8\. PlaywrightService launches Chromium.
 
+9\. Chromium navigates to the target website.
 
+10\. Basic checks are performed:
 
-\## 7. Future Scope
+&#x20;   - HTTP response status
 
+&#x20;   - Page title
 
+&#x20;   - Visible page content
+
+11\. Execution results and timestamps are updated.
+
+12\. Dashboard displays execution history and details.
+
+
+
+Note: Approved steps are currently stored but are not individually interpreted or executed.
+
+
+
+\## 5. Backend Package Structure
+
+
+
+```text
+
+com.devlens.ai
+
+|
+
++-- controller
+
++-- service
+
++-- ai
+
++-- automation
+
++-- bug
+
++-- entity
+
++-- repository
+
++-- config
+
++-- dto
+
+```
+
+
+
+\## 6. Current REST API Design
+
+
+
+| Method | Endpoint | Purpose |
+
+|---|---|---|
+
+| GET | /api/health | Backend health check |
+
+| GET | /api/project/info | Project information |
+
+| POST | /api/tests/plan | Generate a test plan |
+
+| POST | /api/executions | Create and execute browser checks |
+
+| GET | /api/executions | Retrieve execution history |
+
+| GET | /api/executions/{executionId} | Retrieve execution details |
+
+
+
+\## 7. Execution Data Flow
+
+
+
+The current implementation uses ConcurrentHashMap for storing execution records.
+
+
+
+Each execution contains:
+
+\- Execution ID
+
+\- Website URL
+
+\- Approved test steps
+
+\- Execution status
+
+\- Total checks
+
+\- Passed checks
+
+\- Failed checks
+
+\- Start timestamp
+
+\- Completion timestamp
+
+\- Execution summary
+
+
+
+Current limitation: Execution records are stored in memory and are lost when the application restarts.
+
+
+
+\## 8. Security Considerations
+
+
+
+\- Validate website URLs before browser navigation.
+
+\- Execute tests only on authorized websites.
+
+\- Store API keys in environment variables.
+
+\- Do not expose secrets in logs or source code.
+
+\- Avoid destructive browser actions.
+
+\- Introduce appropriate network restrictions before public deployment.
+
+
+
+\## 9. Future Architecture Enhancements
+
+
+
+\- Gemini-powered test planning.
+
+\- Individual approved-step execution.
+
+\- PostgreSQL persistence through Spring Data JPA.
+
+\- Screenshot and log evidence management.
+
+\- Bug detection and reporting.
 
 \- AI-based root cause analysis.
 
 \- Jira integration.
 
-\- Advanced test analytics.
-
-\- Developer fix recommendations.
-
+\- Improved execution isolation and security.

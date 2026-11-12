@@ -2,101 +2,153 @@
 
 \# DevLens-AI
 
-\## AI-Powered Autonomous Website Testing Platform
+\## AI-Powered Website Testing and Bug Management Platform
 
 
 
-\### 1. Project Overview
-
-DevLens-AI is an AI-powered web testing platform that converts natural-language instructions into executable browser tests, identifies failures, and generates structured bug reports with supporting evidence.
+\## 1. Project Overview
 
 
 
-\### 2. Problem Statement
-
-Manual website testing requires significant time and effort. Testers must manually create test cases, execute them, capture evidence, and prepare bug reports.
+DevLens-AI is a web-based QA automation platform designed to simplify website testing.
 
 
 
-DevLens-AI aims to automate these repetitive QA activities using AI and browser automation.
+It aims to convert natural-language testing instructions into structured test plans, execute approved scenarios through browser automation, identify failures, and generate useful bug reports.
 
 
 
-\### 3. Project Objectives
-
-\- Convert natural-language instructions into test cases.
-
-\- Execute test cases automatically using Playwright.
-
-\- Detect unexpected behaviour and test failures.
-
-\- Capture screenshots and execution logs.
-
-\- Generate structured bug reports.
-
-\- Provide AI-based root cause hints and fix suggestions.
-
-\- Manage bugs and test execution history.
-
-\- Support Jira integration.
+The current implementation is an MVP foundation. AI-based test generation, database persistence, and advanced bug management are planned enhancements.
 
 
 
-\### 4. Core Features
+\## 2. Problem Statement
 
 
 
-\#### 4.1 AI Test Planner
-
-\- Accept natural-language testing instructions.
-
-\- Generate structured test scenarios and steps.
-
-\- Identify test actions and expected outcomes.
-
-\- Allow users to review test plans before execution.
+Manual website testing requires testers to create test cases, execute scenarios, identify failures, capture evidence, and prepare bug reports.
 
 
 
-\#### 4.2 Browser Automation
-
-\- Execute approved test steps using Playwright.
-
-\- Support navigation, clicks, text input and assertions.
-
-\- Capture screenshots and execution logs.
-
-\- Handle execution failures safely.
+DevLens-AI aims to reduce repetitive QA work through AI-assisted test planning and automated browser execution.
 
 
 
-\#### 4.3 Bug Detection and Reporting
-
-\- Detect failed test steps.
-
-\- Generate bug titles and descriptions.
-
-\- Include reproduction steps.
-
-\- Assign severity and priority.
-
-\- Attach screenshots and logs.
+\## 3. Project Objectives
 
 
 
-\#### 4.4 Bug Management
+\- Accept website URLs and natural-language testing instructions.
 
-\- View and filter reported bugs.
+\- Generate structured test plans.
 
-\- Track bug status.
+\- Allow testers to review and approve test plans.
+
+\- Execute website checks using Playwright.
+
+\- Display execution status and results.
 
 \- Maintain execution history.
 
+\- Identify failures and support bug reporting.
+
+\- Provide AI-based analysis and developer insights in future versions.
 
 
-\#### 4.5 AI Developer Insights
 
-\- Analyze failure information.
+\## 4. Functional Requirements
+
+
+
+\### 4.1 Dashboard
+
+\- Display total executions.
+
+\- Display passed, failed, and pending test counts.
+
+\- Show recent execution history.
+
+\- Provide navigation between application modules.
+
+
+
+\### 4.2 Test Plan Management
+
+\- Accept a website URL.
+
+\- Accept natural-language testing instructions.
+
+\- Display generated test steps.
+
+\- Allow users to select and approve test steps.
+
+
+
+Current status: Basic workflow implemented with predefined sample test steps. Gemini integration is planned.
+
+
+
+\### 4.3 Browser Automation
+
+\- Launch Chromium using Playwright for Java.
+
+\- Navigate to the provided website.
+
+\- Check HTTP response status.
+
+\- Verify page title.
+
+\- Verify visible page content.
+
+\- Record passed and failed checks.
+
+\- Update execution status and timestamps.
+
+
+
+Current status: Three basic browser checks implemented.
+
+
+
+\### 4.4 Test Execution Management
+
+\- Create execution requests.
+
+\- Generate unique execution IDs.
+
+\- Store approved test steps.
+
+\- Display execution history.
+
+\- Display execution details.
+
+\- Track total, passed, and failed checks.
+
+
+
+Current status: Implemented using in-memory storage. Data is lost when the application restarts.
+
+
+
+\### 4.5 Bug Management
+
+\- Generate structured bug reports.
+
+\- Store reproduction steps and failure details.
+
+\- Support severity and priority.
+
+\- Track bug status.
+
+
+
+Current status: Planned.
+
+
+
+\### 4.6 AI Developer Insights
+
+\- Analyze failed test results.
 
 \- Suggest possible root causes.
 
@@ -104,115 +156,179 @@ DevLens-AI aims to automate these repetitive QA activities using AI and browser 
 
 
 
-\#### 4.6 Jira Integration
+Current status: Planned.
 
-\- Connect with Jira using REST APIs.
+
+
+\### 4.7 Jira Integration
 
 \- Create Jira issues from approved bug reports.
 
-\- Sync issue status where supported.
+\- Integrate using Jira REST APIs.
+
+\- Synchronize issue status where supported.
 
 
 
-\### 5. Technology Stack
+Current status: Planned.
 
 
 
-\- Backend: Java 21, Spring Boot
-
-\- Build Tool: Maven
-
-\- Browser Automation: Playwright for Java
-
-\- AI: Gemini API
-
-\- Database: PostgreSQL
-
-\- Database Client: DBeaver
-
-\- Frontend: HTML, CSS, Bootstrap 5, JavaScript
-
-\- Version Control: Git and GitHub
+\## 5. Technology Stack
 
 
 
-\### 6. Main Backend Modules
+| Component | Technology |
+
+|---|---|
+
+| Programming Language | Java 21 |
+
+| Backend Framework | Spring Boot 4.1.2 |
+
+| Build Tool | Maven |
+
+| Browser Automation | Playwright for Java 1.56.0 |
+
+| Browser | Chromium |
+
+| Frontend | HTML5, CSS3, Bootstrap 5 |
+
+| Frontend Scripting | Vanilla JavaScript |
+
+| Database (planned) | PostgreSQL |
+
+| Database Client (planned) | DBeaver |
+
+| AI Integration (planned) | Gemini API |
+
+| Version Control | Git and GitHub |
 
 
 
-\- Controller
-
-\- Service
-
-\- AI Test Planner
-
-\- Automation Engine
-
-\- Bug Management
-
-\- Entity
-
-\- Repository
-
-\- Configuration
+\## 6. Backend Modules
 
 
 
-\### 7. Non-Functional Requirements
+\- controller
+
+\- service
+
+\- ai
+
+\- automation
+
+\- bug
+
+\- entity
+
+\- repository
+
+\- config
+
+\- dto
+
+
+
+\## 7. Non-Functional Requirements
+
+
+
+\- Modular and maintainable architecture.
+
+\- Input validation and error handling.
 
 \- Secure API key management.
 
-\- Input validation and safe browser execution.
+\- Reliable browser execution.
 
-\- Reliable test execution and evidence storage.
+\- Clear execution status and reporting.
 
-\- Maintainable modular architecture.
+\- Responsive and user-friendly dashboard.
 
-\- Clear error handling and logging.
-
-
-
-\### 8. Safety Requirements
-
-\- Execute tests only on authorized websites.
-
-\- Never perform real payments or destructive actions.
-
-\- Require approval for risky browser actions.
-
-\- Never expose credentials or API keys.
+\- Portable setup across Windows development machines.
 
 
 
-\### 9. MVP Scope
-
-The initial version will support:
-
-1\. Natural-language test instructions.
-
-2\. AI-generated test plans.
-
-3\. Playwright browser execution.
-
-4\. Screenshot capture.
-
-5\. Automatic bug report generation.
-
-6\. Basic bug dashboard.
+\## 8. Security Requirements
 
 
 
-\### 10. Future Enhancements
+\- Execute tests only on websites the user is authorized to test.
 
-\- Jira integration.
+\- Validate submitted website URLs.
 
-\- AI root cause analysis.
+\- Protect API keys using environment variables.
 
-\- Developer fix recommendations.
+\- Avoid logging passwords, tokens, or sensitive information.
 
-\- Advanced test analytics.
+\- Prevent unintended destructive browser actions.
 
-\- Test execution history and reporting.
+\- Apply appropriate restrictions before exposing the application publicly.
+
+
+
+\## 9. Current MVP Scope
+
+
+
+1\. Spring Boot backend.
+
+2\. REST API endpoints.
+
+3\. Interactive dashboard.
+
+4\. Test plan creation and approval workflow.
+
+5\. Playwright Chromium integration.
+
+6\. Basic website checks.
+
+7\. Execution status and history.
+
+8\. Execution details and approved-step display.
+
+
+
+\## 10. Planned Enhancements
+
+
+
+1\. Gemini-powered test plan generation.
+
+2\. Execution of individual approved test steps.
+
+3\. Individual test result display.
+
+4\. Screenshot and execution log capture.
+
+5\. PostgreSQL persistence.
+
+6\. Bug report generation and management.
+
+7\. AI-based root cause analysis.
+
+8\. Developer fix suggestions.
+
+9\. Jira integration.
+
+10\. Advanced execution analytics and reporting.
+
+
+
+\## 11. Project Constraints
+
+
+
+\- The initial frontend uses HTML, CSS, Bootstrap 5, and vanilla JavaScript.
+
+\- React is not part of the selected frontend stack.
+
+\- The initial backend uses Java and Spring Boot.
+
+\- The current execution records are stored in memory.
+
+\- AI and database integrations will be introduced incrementally.
 
 
 

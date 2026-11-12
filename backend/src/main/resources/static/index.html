@@ -210,20 +210,154 @@
 
             </section>
 
-            <!-- Executions Page -->
+            <!-- Test Executions Page -->
             <section class="page-section d-none" id="executions-page">
-                <div class="content-card">
-                    <h4>Test Executions</h4>
-                    <p>Track your execution requests and their current status.</p>
 
-                    <div id="execution-list" class="empty-state">
-                        No execution requests available.
+                <div class="welcome-section">
+                    <div>
+                        <h2>Test Executions</h2>
+                        <p>Monitor your test runs, execution status and results.</p>
                     </div>
+
+                    <button class="btn btn-primary" data-navigate="new-test">
+                        + New Test
+                    </button>
                 </div>
+
+                <!-- Execution Summary -->
+                <div class="row g-3 stats-grid mb-4">
+
+                    <div class="col-md-3">
+                        <div class="stat-card">
+                            <span>Total Executions</span>
+                            <h2 id="execution-total">0</h2>
+                            <small>All execution requests</small>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3">
+                        <div class="stat-card">
+                            <span>Passed Tests</span>
+                            <h2 id="execution-passed">0</h2>
+                            <small>Successful test cases</small>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3">
+                        <div class="stat-card">
+                            <span>Failed Tests</span>
+                            <h2 id="execution-failed">0</h2>
+                            <small>Failed test cases</small>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3">
+                        <div class="stat-card">
+                            <span>Pending Runs</span>
+                            <h2 id="execution-pending">0</h2>
+                            <small>Waiting for execution</small>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Execution History -->
+                <div class="content-card">
+
+                    <div class="card-heading">
+                        <div>
+                            <h5>Execution History</h5>
+                            <p>View and track all your test execution requests.</p>
+                        </div>
+
+                        <button class="btn btn-outline-secondary btn-sm"
+                                id="refresh-executions-btn">
+                            Refresh
+                        </button>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Website</th>
+                                    <th>Execution ID</th>
+                                    <th>Total</th>
+                                    <th>Passed</th>
+                                    <th>Failed</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+
+                            <tbody id="execution-list">
+                                <tr>
+                                    <td colspan="7" class="text-center">
+                                        Loading execution history...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                </div>
+
+                <!-- Execution Details -->
+                <div class="content-card mt-4 d-none"
+                     id="execution-details">
+
+                    <div class="card-heading">
+                        <div>
+                            <h5>Execution Details</h5>
+                            <p>Details of the selected execution request.</p>
+                        </div>
+
+                        <span id="detail-status" class="plan-status">PENDING</span>
+                    </div>
+
+                    <p>
+                        <strong>Website:</strong>
+                        <span id="detail-website"></span>
+                    </p>
+
+                    <p>
+                        <strong>Execution ID:</strong>
+                        <span id="detail-id"></span>
+                    </p>
+
+                    <p>
+                        <strong>Summary:</strong>
+                        <span id="detail-summary"></span>
+                    </p>
+
+                    <p>
+                        <strong>Started At:</strong>
+                        <span id="detail-started"></span>
+                    </p>
+
+                    <p>
+                        <strong>Completed At:</strong>
+                        <span id="detail-completed"></span>
+                    </p>
+
+                    <!-- Approved Test Steps -->
+                    <div class="mt-4">
+                        <h6>Approved Test Steps</h6>
+
+                        <ol id="detail-steps" class="mt-2">
+                            <li class="text-muted">
+                                No steps available.
+                            </li>
+                        </ol>
+                    </div>
+
+                </div>
+
             </section>
 
-            <!-- Bugs Page -->
+            <!-- Bug Reports Page -->
             <section class="page-section d-none" id="bugs-page">
+
                 <div class="content-card">
                     <h4>Bug Reports</h4>
                     <p>Review and manage issues discovered during test execution.</p>
@@ -234,6 +368,7 @@
                         <p>Detected issues will appear here once execution and bug reporting are implemented.</p>
                     </div>
                 </div>
+
             </section>
 
         </div>

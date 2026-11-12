@@ -1,278 +1,448 @@
 
 document.addEventListener("DOMContentLoaded", () => {
 
-    let currentWebsiteUrl = "";
-    let isPlanApproved = false;
-    let executions = [];
+    // ==========================================
+    // 1. DOM ELEMENTS
+    // ==========================================
 
-    // -------------------------------
-    // 1. Navigation
-    // -------------------------------
+    const pageTitle = document.getElementById("page-title");
 
-    const pageTitles = {
-        dashboard: "Dashboard",
-        "new-test": "Create Test Plan",
-        executions: "Test Executions",
-        bugs: "Bug Reports"
+    const pages = {
+        dashboard: document.getElementById("dashboard-page"),
+        "new-test": document.getElementById("new-test-page"),
+        executions: document.getElementById("executions-page"),
+        bugs: document.getElementById("bugs-page")
     };
 
-    function navigateTo(page) {
+    const navLinks = document.querySelectorAll("[data-page]");
+    const navigateButtons = document.querySelectorAll("[data-navigate]");
 
-        document.querySelectorAll(".page-section").forEach(section => {
-            section.classList.add("d-none");
+    const testPlanForm = document.getElementById("test-plan-form");
+    const generatePlanBtn = document.getElementById("generate-plan-btn");
+    const testPlanResult = document.getElementById("test-plan-result");
+    const testPlanSteps = document.getElementById("test-plan-steps");
+    const approvePlanBtn = document.getElementById("approve-plan-btn");
+    const executePlanBtn = document.getElementById("execute-plan-btn");
+
+    const executionList = document.getElementById("execution-list");
+    const recentExecutions = document.getElementById("recent-executions");
+    const refreshExecutionsBtn = document.getElementById("refresh-executions-btn");
+
+    const executionDetails = document.getElementById("execution-details");
+    const detailStatus = document.getElementById("detail-status");
+    const detailWebsite = document.getElementById("detail-website");
+    const detailId = document.getElementById("detail-id");
+    const detailSummary = document.getElementById("detail-summary");
+    const detailStarted = document.getElementById("detail-started");
+    const detailCompleted = document.getElementById("detail-completed");
+    const detailSteps = document.getElementById("detail-steps");
+
+    // ==========================================
+    // 2. APPLICATION STATE
+    // ==========================================
+
+    let currentTestPlan = null;
+    let approvedSteps = [];
+    let executions = [];
+
+    // ==========================================
+    // 3. HELPER FUNCTIONS
+    // ==========================================
+
+    function getResponseData(response) {
+        return response && response.data !== undefined
+            ? response.data
+            : response;
+    }
+
+    function showMessage(message, type = "info") {
+        const alert = document.createElement("div");
+
+        alert.className = `alert alert-${type} mt-3`;
+        alert.textContent = message;
+
+        const activePage = document.querySelector(".page-section:not(.d-none)");
+
+        if (activePage) {
+            activePage.prepend(alert);
+
+            setTimeout(() => {
+                alert.remove();
+            }, 4000);
+        }
+    }
+
+    function formatDate(dateValue) {
+        if (!dateValue) {
+            return "Not available";
+        }
+
+        const date = new Date(dateValue);
+
+        if (Number.isNaN(date.getTime())) {
+            return dateValue;
+        }
+
+        return date.toLocaleString();
+    }
+
+    function createStatusBadge(status) {
+        const badge = document.createElement("span");
+
+        badge.className = "badge rounded-pill";
+
+        const normalizedStatus = (status || "UNKNOWN").toUpperCase();
+
+        const statusClasses = {
+            PENDING: "text-bg-warning",
+            RUNNING: "text-bg-info",
+            PASSED: "text-bg-success",
+            FAILED: "text-bg-danger",
+            CANCELLED: "text-bg-secondary",
+            DRAFT: "text-bg-secondary"
+        };
+
+        badge.classList.add(
+            statusClasses[normalizedStatus] || "text-bg-secondary"
+        );
+
+        badge.textContent = normalizedStatus;
+
+        return badge;
+    }
+
+    // ==========================================
+    // 4. PAGE NAVIGATION
+    // ==========================================
+
+    function navigateTo(pageName) {
+
+        if (!pages[pageName]) {
+            return;
+        }
+
+        Object.values(pages).forEach(page => {
+            page.classList.add("d-none");
         });
 
-        const selectedPage = document.getElementById(`${page}-page`);
+        pages[pageName].classList.remove("d-none");
 
-        if (!selectedPage) return;
-
-        selectedPage.classList.remove("d-none");
-
-        document.querySelectorAll(".sidebar-nav .nav-link").forEach(link => {
-            link.classList.toggle("active", link.dataset.page === page);
+        navLinks.forEach(link => {
+            link.classList.toggle(
+                "active",
+                link.dataset.page === pageName
+            );
         });
 
-        document.getElementById("page-title").textContent =
-            pageTitles[page] || "DevLens AI";
+        const titles = {
+            dashboard: "Dashboard",
+            "new-test": "Create Test Plan",
+            executions: "Test Executions",
+            bugs: "Bug Reports"
+        };
 
-        if (page === "executions") {
+        pageTitle.textContent = titles[pageName];
+
+        if (pageName === "executions") {
             loadExecutions();
         }
     }
 
-    document.querySelectorAll("[data-page]").forEach(link => {
+    navLinks.forEach(link => {
         link.addEventListener("click", event => {
             event.preventDefault();
             navigateTo(link.dataset.page);
         });
     });
 
-    document.querySelectorAll("[data-navigate]").forEach(button => {
+    navigateButtons.forEach(button => {
         button.addEventListener("click", () => {
             navigateTo(button.dataset.navigate);
         });
     });
 
-    document.getElementById("create-test-btn").addEventListener("click", () => {
-        navigateTo("new-test");
-    });
+    document.getElementById("create-test-btn")
+        ?.addEventListener("click", () => {
+            navigateTo("new-test");
+        });
 
-
-    // -------------------------------
-    // 2. Generate Test Plan
-    // -------------------------------
-
-    const testPlanForm = document.getElementById("test-plan-form");
-    const generateButton = document.getElementById("generate-plan-btn");
-    const resultSection = document.getElementById("test-plan-result");
-    const stepsContainer = document.getElementById("test-plan-steps");
+    // ==========================================
+    // 5. GENERATE TEST PLAN
+    // ==========================================
 
     testPlanForm.addEventListener("submit", async event => {
 
         event.preventDefault();
 
-        const websiteUrl =
-            document.getElementById("website-url").value.trim();
+        const websiteUrl = document.getElementById("website-url").value.trim();
+        const instruction = document.getElementById("test-instruction").value.trim();
 
-        const instruction =
-            document.getElementById("test-instruction").value.trim();
+        if (!websiteUrl || !instruction) {
+            showMessage("Please enter website URL and testing instructions.", "warning");
+            return;
+        }
+
+        generatePlanBtn.disabled = true;
+        generatePlanBtn.textContent = "Generating...";
+
+        testPlanResult.classList.add("d-none");
+        currentTestPlan = null;
+        approvedSteps = [];
 
         try {
-            generateButton.disabled = true;
-            generateButton.textContent = "Generating...";
-
-            resultSection.classList.add("d-none");
 
             const response = await DevLensAPI.generateTestPlan(
                 websiteUrl,
                 instruction
             );
 
-            if (!response.success || !response.data) {
-                throw new Error(response.message || "Unable to generate test plan.");
+            const plan = getResponseData(response);
+
+            if (!plan || !Array.isArray(plan.testSteps)) {
+                throw new Error("Invalid test plan response from backend.");
             }
 
-            currentWebsiteUrl = websiteUrl;
-            isPlanApproved = false;
+            currentTestPlan = plan;
 
-            renderTestPlan(response.data);
+            renderTestPlan(plan);
 
-            resultSection.classList.remove("d-none");
+            testPlanResult.classList.remove("d-none");
+
+            approvePlanBtn.disabled = true;
+            executePlanBtn.disabled = true;
+
+            showMessage("Test plan generated successfully. Review the steps.", "success");
 
         } catch (error) {
-            alert(error.message || "Something went wrong.");
+
+            console.error("Test plan error:", error);
+
+            showMessage(
+                error.message || "Unable to generate test plan.",
+                "danger"
+            );
 
         } finally {
-            generateButton.disabled = false;
-            generateButton.textContent = "Generate Test Plan";
+
+            generatePlanBtn.disabled = false;
+            generatePlanBtn.textContent = "Generate Test Plan";
         }
     });
 
-
-    // -------------------------------
-    // 3. Render Test Plan
-    // -------------------------------
+    // ==========================================
+    // 6. RENDER GENERATED TEST PLAN
+    // ==========================================
 
     function renderTestPlan(plan) {
 
-        stepsContainer.replaceChildren();
+        testPlanSteps.replaceChildren();
 
-        (plan.testSteps || []).forEach((step, index) => {
+        approvedSteps = [];
+
+        plan.testSteps.forEach((step, index) => {
 
             const wrapper = document.createElement("div");
-            wrapper.className = "test-step";
+            wrapper.className = "form-check mb-3";
 
             const checkbox = document.createElement("input");
             checkbox.type = "checkbox";
-            checkbox.checked = true;
-            checkbox.className = "step-checkbox";
+            checkbox.className = "form-check-input";
+            checkbox.id = `test-step-${index}`;
+            checkbox.value = step;
 
             const label = document.createElement("label");
-            label.textContent = `${index + 1}. ${step}`;
+            label.className = "form-check-label";
+            label.htmlFor = checkbox.id;
+            label.textContent = step;
+
+            checkbox.addEventListener("change", updateApprovalState);
 
             wrapper.appendChild(checkbox);
             wrapper.appendChild(label);
 
-            stepsContainer.appendChild(wrapper);
+            testPlanSteps.appendChild(wrapper);
         });
 
-        document.getElementById("approve-plan-btn").disabled = false;
-        document.getElementById("execute-plan-btn").disabled = true;
-        document.querySelector(".plan-status").textContent = "DRAFT";
+        const status = testPlanResult.querySelector(".plan-status");
+
+        if (status) {
+            status.textContent = "DRAFT";
+        }
     }
 
+    // ==========================================
+    // 7. APPROVE TEST PLAN
+    // ==========================================
 
-    // -------------------------------
-    // 4. Approve Test Plan
-    // -------------------------------
+    function updateApprovalState() {
 
-    document.getElementById("approve-plan-btn").addEventListener("click", () => {
+        const checkboxes = testPlanSteps.querySelectorAll(
+            'input[type="checkbox"]:checked'
+        );
 
-        if (getSelectedSteps().length === 0) {
-            alert("Please select at least one test step.");
+        approvedSteps = Array.from(checkboxes).map(
+            checkbox => checkbox.value
+        );
+
+        approvePlanBtn.disabled = approvedSteps.length === 0;
+
+        if (approvedSteps.length === 0) {
+            executePlanBtn.disabled = true;
+        }
+    }
+
+    approvePlanBtn.addEventListener("click", () => {
+
+        if (approvedSteps.length === 0) {
+            showMessage("Select at least one test step.", "warning");
             return;
         }
 
-        isPlanApproved = true;
+        const status = testPlanResult.querySelector(".plan-status");
 
-        document.getElementById("execute-plan-btn").disabled = false;
-        document.querySelector(".plan-status").textContent = "APPROVED";
+        if (status) {
+            status.textContent = "APPROVED";
+        }
 
-        alert("Test plan approved successfully!");
+        approvePlanBtn.disabled = true;
+        executePlanBtn.disabled = false;
+
+        showMessage(
+            `${approvedSteps.length} test steps approved successfully.`,
+            "success"
+        );
     });
 
+    // ==========================================
+    // 8. CREATE TEST EXECUTION
+    // ==========================================
 
-    function getSelectedSteps() {
+    executePlanBtn.addEventListener("click", async () => {
 
-        const selectedSteps = [];
-
-        document.querySelectorAll(".test-step").forEach(wrapper => {
-
-            const checkbox = wrapper.querySelector(".step-checkbox");
-
-            if (checkbox.checked) {
-                selectedSteps.push(
-                    wrapper.querySelector("label").textContent.replace(/^\d+\.\s*/, "")
-                );
-            }
-        });
-
-        return selectedSteps;
-    }
-
-
-    // -------------------------------
-    // 5. Create Execution
-    // -------------------------------
-
-    document.getElementById("execute-plan-btn").addEventListener("click", async () => {
-
-        if (!isPlanApproved) {
-            alert("Please approve the test plan first.");
+        if (!currentTestPlan || approvedSteps.length === 0) {
+            showMessage("Please generate and approve a test plan first.", "warning");
             return;
         }
 
-        const executeButton = document.getElementById("execute-plan-btn");
+        executePlanBtn.disabled = true;
+        executePlanBtn.textContent = "Creating Execution...";
 
         try {
-            executeButton.disabled = true;
-            executeButton.textContent = "Creating...";
 
             const response = await DevLensAPI.createExecution(
-                currentWebsiteUrl,
-                getSelectedSteps()
+                currentTestPlan.websiteUrl,
+                approvedSteps
             );
 
-            if (!response.success || !response.data) {
-                throw new Error(response.message || "Execution request failed.");
+            const execution = getResponseData(response);
+
+            if (!execution || !execution.executionId) {
+                throw new Error("Execution could not be created.");
             }
+
+            showMessage(
+                "Execution request created successfully.",
+                "success"
+            );
 
             await loadExecutions();
 
-            alert("Execution request created successfully!");
-
             navigateTo("executions");
 
+            showExecutionDetails(execution);
+
         } catch (error) {
-            alert(error.message || "Unable to create execution.");
+
+            console.error("Execution creation error:", error);
+
+            showMessage(
+                error.message || "Unable to create execution.",
+                "danger"
+            );
 
         } finally {
-            executeButton.disabled = false;
-            executeButton.textContent = "Execute Tests";
+
+            executePlanBtn.disabled = false;
+            executePlanBtn.textContent = "Execute Tests";
         }
     });
 
-
-    // -------------------------------
-    // 6. Load Executions From Backend
-    // -------------------------------
+    // ==========================================
+    // 9. LOAD EXECUTION HISTORY
+    // ==========================================
 
     async function loadExecutions() {
 
-        const executionList = document.getElementById("execution-list");
+        if (!executionList) {
+            return;
+        }
 
-        executionList.textContent = "Loading execution history...";
+        executionList.replaceChildren();
+
+        const loadingRow = document.createElement("tr");
+        const loadingCell = document.createElement("td");
+
+        loadingCell.colSpan = 7;
+        loadingCell.className = "text-center";
+        loadingCell.textContent = "Loading execution history...";
+
+        loadingRow.appendChild(loadingCell);
+        executionList.appendChild(loadingRow);
 
         try {
 
             const response = await DevLensAPI.getAllExecutions();
 
-            if (!response.success) {
-                throw new Error(response.message || "Unable to load history.");
-            }
+            const data = getResponseData(response);
 
-            executions = response.data || [];
+            executions = Array.isArray(data) ? data : [];
 
             renderExecutions();
             updateDashboard();
 
         } catch (error) {
 
-            executionList.textContent =
-                `Could not load execution history: ${error.message}`;
+            console.error("Execution history error:", error);
 
+            executionList.replaceChildren();
+
+            const errorRow = document.createElement("tr");
+            const errorCell = document.createElement("td");
+
+            errorCell.colSpan = 7;
+            errorCell.className = "text-center text-danger";
+            errorCell.textContent = "Unable to load execution history.";
+
+            errorRow.appendChild(errorCell);
+            executionList.appendChild(errorRow);
         }
     }
 
-
-    // -------------------------------
-    // 7. Render Execution History
-    // -------------------------------
+    // ==========================================
+    // 10. RENDER EXECUTION HISTORY
+    // ==========================================
 
     function renderExecutions() {
-
-        const executionList = document.getElementById("execution-list");
-        const recentExecutions = document.getElementById("recent-executions");
 
         executionList.replaceChildren();
         recentExecutions.replaceChildren();
 
         if (executions.length === 0) {
 
-            executionList.textContent = "No execution requests available.";
+            const emptyRow = document.createElement("tr");
+            const emptyCell = document.createElement("td");
+
+            emptyCell.colSpan = 7;
+            emptyCell.className = "text-center text-muted";
+            emptyCell.textContent = "No executions found.";
+
+            emptyRow.appendChild(emptyCell);
+            executionList.appendChild(emptyRow);
+
+            recentExecutions.className = "empty-state";
 
             const message = document.createElement("p");
-            message.textContent = "Create your first AI test plan to get started.";
+            message.textContent = "No executions yet. Create your first test plan.";
 
             recentExecutions.appendChild(message);
 
@@ -280,72 +450,199 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         executions.forEach(execution => {
-            executionList.appendChild(createExecutionElement(execution));
+            executionList.appendChild(createExecutionRow(execution));
         });
+
+        recentExecutions.className = "";
 
         executions.slice(0, 5).forEach(execution => {
-            recentExecutions.appendChild(createExecutionElement(execution));
+            recentExecutions.appendChild(
+                createRecentExecutionElement(execution)
+            );
         });
     }
 
+    // ==========================================
+    // 11. CREATE EXECUTION TABLE ROW
+    // ==========================================
 
-    function createExecutionElement(execution) {
+    function createExecutionRow(execution) {
 
-        const item = document.createElement("div");
-        item.className = "execution-item";
+        const row = document.createElement("tr");
 
-        const details = document.createElement("div");
+        const websiteCell = document.createElement("td");
+        websiteCell.textContent = execution.websiteUrl || "Unknown";
 
-        const title = document.createElement("strong");
-        title.textContent = execution.websiteUrl;
+        const idCell = document.createElement("td");
+        idCell.textContent = execution.executionId
+            ? execution.executionId.substring(0, 12) + "..."
+            : "N/A";
+        idCell.title = execution.executionId || "";
 
-        const info = document.createElement("small");
-        info.textContent = `Execution ID: ${execution.executionId}`;
+        const totalCell = document.createElement("td");
+        totalCell.textContent = execution.totalTests ?? 0;
 
-        details.appendChild(title);
-        details.appendChild(document.createElement("br"));
-        details.appendChild(info);
+        const passedCell = document.createElement("td");
+        passedCell.textContent = execution.passedTests ?? 0;
 
-        const status = document.createElement("span");
-        status.className = "execution-status";
-        status.textContent = execution.status;
+        const failedCell = document.createElement("td");
+        failedCell.textContent = execution.failedTests ?? 0;
 
-        item.appendChild(details);
-        item.appendChild(status);
+        const statusCell = document.createElement("td");
+        statusCell.appendChild(createStatusBadge(execution.status));
 
-        return item;
+        const actionCell = document.createElement("td");
+
+        const viewButton = document.createElement("button");
+        viewButton.className = "btn btn-sm btn-outline-primary";
+        viewButton.textContent = "View Details";
+
+        viewButton.addEventListener("click", () => {
+            showExecutionDetails(execution);
+        });
+
+        actionCell.appendChild(viewButton);
+
+        row.append(
+            websiteCell,
+            idCell,
+            totalCell,
+            passedCell,
+            failedCell,
+            statusCell,
+            actionCell
+        );
+
+        return row;
     }
 
+    // ==========================================
+    // 12. RECENT EXECUTION CARD
+    // ==========================================
 
-    // -------------------------------
-    // 8. Dashboard Statistics
-    // -------------------------------
+    function createRecentExecutionElement(execution) {
+
+        const card = document.createElement("div");
+        card.className = "execution-item d-flex justify-content-between align-items-center border-bottom py-3";
+
+        const info = document.createElement("div");
+
+        const website = document.createElement("strong");
+        website.textContent = execution.websiteUrl || "Unknown website";
+
+        const id = document.createElement("small");
+        id.className = "d-block text-muted";
+        id.textContent = execution.executionId || "N/A";
+
+        info.append(website, id);
+
+        const status = createStatusBadge(execution.status);
+
+        card.append(info, status);
+
+        return card;
+    }
+
+    // ==========================================
+    // 13. SHOW EXECUTION DETAILS
+    // ==========================================
+
+    function showExecutionDetails(execution) {
+
+        if (!execution) {
+            return;
+        }
+
+        executionDetails.classList.remove("d-none");
+
+        detailStatus.replaceChildren();
+        detailStatus.appendChild(
+            createStatusBadge(execution.status)
+        );
+
+        detailWebsite.textContent = execution.websiteUrl || "N/A";
+        detailId.textContent = execution.executionId || "N/A";
+        detailSummary.textContent = execution.summary || "No summary available.";
+        detailStarted.textContent = formatDate(execution.startedAt);
+        detailCompleted.textContent = formatDate(execution.completedAt);
+
+        // Display actual approved test steps returned by backend.
+        detailSteps.replaceChildren();
+
+        const steps = Array.isArray(execution.approvedSteps)
+            ? execution.approvedSteps
+            : [];
+
+        if (steps.length === 0) {
+
+            const emptyItem = document.createElement("li");
+            emptyItem.className = "text-muted";
+            emptyItem.textContent = "No approved test steps available.";
+
+            detailSteps.appendChild(emptyItem);
+
+        } else {
+
+            steps.forEach((step, index) => {
+
+                const listItem = document.createElement("li");
+                listItem.className = "mb-2";
+                listItem.textContent = step;
+
+                detailSteps.appendChild(listItem);
+            });
+        }
+
+        executionDetails.scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+        });
+    }
+
+    // ==========================================
+    // 14. UPDATE DASHBOARD COUNTS
+    // ==========================================
 
     function updateDashboard() {
 
-        document.getElementById("total-runs").textContent =
-            executions.length;
+        const total = executions.length;
 
         const passed = executions.reduce(
-            (total, item) => total + (item.passedTests || 0), 0
+            (sum, execution) => sum + (execution.passedTests || 0),
+            0
         );
 
         const failed = executions.reduce(
-            (total, item) => total + (item.failedTests || 0), 0
+            (sum, execution) => sum + (execution.failedTests || 0),
+            0
         );
 
+        const pending = executions.filter(
+            execution => execution.status === "PENDING"
+        ).length;
+
+        document.getElementById("total-runs").textContent = total;
         document.getElementById("passed-tests").textContent = passed;
         document.getElementById("failed-tests").textContent = failed;
-        document.getElementById("total-bugs").textContent = "0";
+
+        document.getElementById("execution-total").textContent = total;
+        document.getElementById("execution-passed").textContent = passed;
+        document.getElementById("execution-failed").textContent = failed;
+        document.getElementById("execution-pending").textContent = pending;
     }
 
+    // ==========================================
+    // 15. REFRESH EXECUTION HISTORY
+    // ==========================================
 
-    // -------------------------------
-    // 9. Initial Dashboard Load
-    // -------------------------------
+    refreshExecutionsBtn?.addEventListener("click", () => {
+        loadExecutions();
+    });
 
-    updateDashboard();
-    navigateTo("dashboard");
+    // ==========================================
+    // 16. INITIAL DASHBOARD LOAD
+    // ==========================================
+
     loadExecutions();
 
 });
