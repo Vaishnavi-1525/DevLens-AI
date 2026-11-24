@@ -42,8 +42,10 @@ document.addEventListener("DOMContentLoaded", () => {
     // ==========================================
 
     let currentTestPlan = null;
-    let approvedSteps = [];
-    let executions = [];
+let approvedSteps = [];
+let executions = [];
+let bugReports = [];
+let selectedBugId = null;
 
     // ==========================================
     // 3. HELPER FUNCTIONS
@@ -144,8 +146,12 @@ document.addEventListener("DOMContentLoaded", () => {
         pageTitle.textContent = titles[pageName];
 
         if (pageName === "executions") {
-            loadExecutions();
-        }
+    loadExecutions();
+}
+
+if (pageName === "bugs") {
+    loadBugReports();
+}
     }
 
     navLinks.forEach(link => {
@@ -593,6 +599,59 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         }
 
+        // Display individual Playwright check results.
+        const checksContainer = document.getElementById("detail-checks");
+
+        if (checksContainer) {
+            checksContainer.replaceChildren();
+
+            const checks = Array.isArray(execution.checks)
+                ? execution.checks
+                : [];
+
+            if (checks.length === 0) {
+                checksContainer.textContent =
+                    "No check results available.";
+            } else {
+                checks.forEach(check => {
+                    const checkCard = document.createElement("div");
+                    checkCard.className = "border rounded p-3 mb-2";
+
+                    const header = document.createElement("div");
+                    header.className =
+                        "d-flex justify-content-between align-items-center mb-2";
+
+                    const checkName = document.createElement("strong");
+                    checkName.textContent = check.name || "Unnamed Check";
+
+                    const status = (check.status || "UNKNOWN").toUpperCase();
+
+                    const statusBadge = document.createElement("span");
+                    statusBadge.className =
+                        status === "PASSED"
+                            ? "badge bg-success"
+                            : status === "FAILED"
+                                ? "badge bg-danger"
+                                : "badge bg-secondary";
+
+                    statusBadge.textContent = status;
+
+                    const details = document.createElement("p");
+                    details.className = "text-muted mb-0";
+                    details.textContent =
+                        check.details || "No details available.";
+
+                    header.appendChild(checkName);
+                    header.appendChild(statusBadge);
+
+                    checkCard.appendChild(header);
+                    checkCard.appendChild(details);
+
+                    checksContainer.appendChild(checkCard);
+                });
+            }
+        }
+
         executionDetails.scrollIntoView({
             behavior: "smooth",
             block: "start"
@@ -630,6 +689,324 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("execution-failed").textContent = failed;
         document.getElementById("execution-pending").textContent = pending;
     }
+
+    // ==========================================
+    // 15. BUG REPORT MANAGEMENT
+    // ==========================================
+
+    async function loadBugReports() {
+
+        const bugList = document.getElementById("bug-list");
+
+        if (!bugList) {
+            return;
+        }
+
+        bugList.replaceChildren();
+
+        const loadingRow = document.createElement("tr");
+        const loadingCell = document.createElement("td");
+
+        loadingCell.colSpan = 7;
+        loadingCell.className = "text-center";
+        loadingCell.textContent = "Loading bug reports...";
+
+        loadingRow.appendChild(loadingCell);
+        bugList.appendChild(loadingRow);
+
+        try {
+
+            const response = await DevLensAPI.getAllBugReports();
+            const data = getResponseData(response);
+
+            bugReports = Array.isArray(data) ? data : [];
+
+            renderBugReports();
+            updateBugStatistics();
+
+        } catch (error) {
+
+            console.error("Bug reports error:", error);
+
+            bugList.replaceChildren();
+
+            const row = document.createElement("tr");
+            const cell = document.createElement("td");
+
+            cell.colSpan = 7;
+            cell.className = "text-center text-danger";
+            cell.textContent = "Unable to load bug reports.";
+
+            row.appendChild(cell);
+            bugList.appendChild(row);
+        }
+    }
+
+    // ==========================================
+    // 16. RENDER BUG REPORTS
+    // ==========================================
+
+    function renderBugReports() {
+
+        const bugList = document.getElementById("bug-list");
+        const emptyState = document.getElementById("bug-empty-state");
+
+        if (!bugList) {
+            return;
+        }
+
+        bugList.replaceChildren();
+
+        const searchValue =
+            document.getElementById("bug-search")?.value.trim().toLowerCase() || "";
+
+        const statusValue =
+            document.getElementById("bug-status-filter")?.value || "";
+
+        const priorityValue =
+            document.getElementById("bug-priority-filter")?.value || "";
+
+        const filteredBugs = bugReports.filter(bug => {
+
+            const matchesSearch =
+                (bug.bugId || "").toLowerCase().includes(searchValue) ||
+                (bug.title || "").toLowerCase().includes(searchValue);
+
+            const matchesStatus =
+                !statusValue || bug.status === statusValue;
+
+            const matchesPriority =
+                !priorityValue || bug.priority === priorityValue;
+
+            return matchesSearch && matchesStatus && matchesPriority;
+        });
+
+        if (filteredBugs.length === 0) {
+
+            if (emptyState) {
+                emptyState.classList.remove("d-none");
+            }
+
+            const row = document.createElement("tr");
+            const cell = document.createElement("td");
+
+            cell.colSpan = 7;
+            cell.className = "text-center text-muted";
+            cell.textContent = "No matching bug reports found.";
+
+            row.appendChild(cell);
+            bugList.appendChild(row);
+
+            return;
+        }
+
+        if (emptyState) {
+            emptyState.classList.add("d-none");
+        }
+
+        filteredBugs.forEach(bug => {
+
+            const row = document.createElement("tr");
+
+            const values = [
+                bug.bugId,
+                bug.title,
+                bug.bugType,
+                bug.severity,
+                bug.priority,
+                bug.status
+            ];
+
+            values.forEach((value, index) => {
+
+                const cell = document.createElement("td");
+
+                if (index === 0) {
+                    const strong = document.createElement("strong");
+                    strong.textContent = value || "N/A";
+                    cell.appendChild(strong);
+                } else if (index === 5) {
+                    cell.appendChild(createStatusBadge(value));
+                } else {
+                    cell.textContent = value || "N/A";
+                }
+
+                row.appendChild(cell);
+            });
+
+            const actionCell = document.createElement("td");
+            const viewButton = document.createElement("button");
+
+            viewButton.className = "btn btn-sm btn-outline-primary";
+            viewButton.textContent = "View";
+
+            viewButton.addEventListener("click", () => {
+                showBugDetails(bug);
+            });
+
+            actionCell.appendChild(viewButton);
+            row.appendChild(actionCell);
+
+            bugList.appendChild(row);
+        });
+    }
+
+    // ==========================================
+    // 17. BUG REPORT STATISTICS
+    // ==========================================
+
+    function updateBugStatistics() {
+
+        const total = bugReports.length;
+
+        const open = bugReports.filter(
+            bug => bug.status === "OPEN"
+        ).length;
+
+        const critical = bugReports.filter(
+            bug => bug.severity === "CRITICAL"
+        ).length;
+
+        const high = bugReports.filter(
+            bug => bug.priority === "HIGH"
+        ).length;
+
+        document.getElementById("bug-total").textContent = total;
+        document.getElementById("bug-open").textContent = open;
+        document.getElementById("bug-critical").textContent = critical;
+        document.getElementById("bug-high").textContent = high;
+
+        const dashboardBugCount = document.getElementById("total-bugs");
+
+        if (dashboardBugCount) {
+            dashboardBugCount.textContent = total;
+        }
+    }
+
+    // ==========================================
+    // 18. BUG REPORT DETAILS
+    // ==========================================
+
+
+function showBugDetails(bug) {
+
+    const details = document.getElementById("bug-details");
+
+    if (!details || !bug) {
+        return;
+    }
+
+    details.classList.remove("d-none");
+
+    selectedBugId = bug.bugId;
+
+    document.getElementById("bug-detail-status").textContent =
+        bug.status || "UNKNOWN";
+
+    document.getElementById("bug-detail-id").textContent =
+        bug.bugId || "N/A";
+
+    document.getElementById("bug-detail-title").textContent =
+        bug.title || "N/A";
+
+    document.getElementById("bug-detail-description").textContent =
+        bug.description || "N/A";
+
+    document.getElementById("bug-detail-test").textContent =
+        bug.failedTestName || "N/A";
+
+    document.getElementById("bug-detail-error").textContent =
+        bug.errorDetails || "N/A";
+
+    document.getElementById("bug-detail-website").textContent =
+        bug.websiteUrl || "N/A";
+
+    document.getElementById("bug-detail-execution").textContent =
+        bug.executionId || "N/A";
+
+    document.getElementById("bug-detail-priority").textContent =
+        bug.priority || "N/A";
+
+    document.getElementById("bug-detail-severity").textContent =
+        bug.severity || "N/A";
+
+    document.getElementById("bug-detail-type").textContent =
+        bug.bugType || "N/A";
+
+    // Display injected phase
+    document.getElementById("bug-detail-phase").textContent =
+        bug.injectedPhase || "Not Assigned";
+
+    document.getElementById("bug-detail-browser").textContent =
+        bug.browser || "N/A";
+
+    document.getElementById("bug-detail-page").textContent =
+        bug.pageUrl || "N/A";
+
+    document.getElementById("bug-detail-date").textContent =
+        formatDate(bug.reportedAt);
+
+    // Screenshot evidence
+    const screenshotContainer =
+        document.getElementById("bug-screenshot-container");
+
+    screenshotContainer.replaceChildren();
+
+    if (bug.screenshotPath && bug.bugId) {
+
+        const image = document.createElement("img");
+
+        image.src = DevLensAPI.getBugScreenshotUrl(bug.bugId);
+        image.alt = "Bug screenshot evidence";
+        image.className = "img-fluid rounded border";
+        image.style.maxHeight = "500px";
+
+        image.onerror = () => {
+            screenshotContainer.textContent =
+                "Screenshot evidence is unavailable.";
+        };
+
+        screenshotContainer.appendChild(image);
+
+    } else {
+
+        screenshotContainer.textContent =
+            "No screenshot evidence available.";
+    }
+
+    details.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+    });
+}
+
+    // ==========================================
+    // 19. BUG REPORT FILTERS AND ACTIONS
+    // ==========================================
+
+
+
+    document.getElementById("refresh-bugs-btn")
+        ?.addEventListener("click", loadBugReports);
+
+    document.getElementById("bug-search")
+        ?.addEventListener("input", renderBugReports);
+
+    document.getElementById("bug-status-filter")
+        ?.addEventListener("change", renderBugReports);
+
+    document.getElementById("bug-priority-filter")
+        ?.addEventListener("change", renderBugReports);
+
+    document.getElementById("clear-bug-filters-btn")
+        ?.addEventListener("click", () => {
+
+            document.getElementById("bug-search").value = "";
+            document.getElementById("bug-status-filter").value = "";
+            document.getElementById("bug-priority-filter").value = "";
+
+            renderBugReports();
+        });
 
     // ==========================================
     // 15. REFRESH EXECUTION HISTORY

@@ -77,6 +77,69 @@ const DevLensAPI = {
         }
 
         return await response.json();
+    },
+
+    // Retrieve all bug reports
+    async getAllBugReports() {
+
+        const response = await fetch(`${API_BASE_URL}/bugs`);
+
+        if (!response.ok) {
+            throw new Error(`Unable to retrieve bug reports (${response.status})`);
+        }
+
+        return await response.json();
+    },
+
+    // Retrieve one bug report
+    async getBugReport(bugId) {
+
+        const response = await fetch(
+            `${API_BASE_URL}/bugs/${encodeURIComponent(bugId)}`
+        );
+
+        if (!response.ok) {
+            if (response.status === 404) {
+                throw new Error("Bug report not found.");
+            }
+
+            throw new Error(`Unable to retrieve bug report (${response.status})`);
+        }
+
+        return await response.json();
+    },
+
+    // Update bug injected phase
+    async updateBugInjectedPhase(bugId, injectedPhase) {
+
+        const response = await fetch(
+            `${API_BASE_URL}/bugs/${encodeURIComponent(bugId)}/injected-phase`,
+            {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    injectedPhase
+                })
+            }
+        );
+
+        if (!response.ok) {
+            const errorMessage = await response.text();
+
+            throw new Error(
+                errorMessage || `Unable to update bug phase (${response.status})`
+            );
+        }
+
+        return await response.json();
+    },
+
+    // Get screenshot evidence URL
+    getBugScreenshotUrl(bugId) {
+
+        return `${API_BASE_URL}/bugs/${encodeURIComponent(bugId)}/screenshot`;
     }
 
 };

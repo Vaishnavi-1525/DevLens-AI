@@ -1,8 +1,10 @@
+
 package com.devlens.ai.service;
 
 import com.devlens.ai.automation.PlaywrightService;
 import com.devlens.ai.automation.TestExecutionResult;
 import com.devlens.ai.automation.TestExecutionStatus;
+import com.devlens.ai.bug.BugReportService;
 import com.devlens.ai.dto.TestExecutionRequest;
 
 import org.springframework.stereotype.Service;
@@ -21,9 +23,14 @@ public class TestExecutionService {
             new ConcurrentHashMap<>();
 
     private final PlaywrightService playwrightService;
+    private final BugReportService bugReportService;
 
-    public TestExecutionService(PlaywrightService playwrightService) {
+    public TestExecutionService(
+            PlaywrightService playwrightService,
+            BugReportService bugReportService) {
+
         this.playwrightService = playwrightService;
+        this.bugReportService = bugReportService;
     }
 
     public TestExecutionResult createExecution(
@@ -52,6 +59,21 @@ public class TestExecutionService {
             result.setTotalTests(total);
             result.setPassedTests(passed);
             result.setFailedTests(failed);
+
+            @SuppressWarnings("unchecked")
+            List<Map<String, String>> checks =
+                    (List<Map<String, String>>) browserResult.get("checks");
+
+            result.setChecks(checks);
+
+            // Automatically create bug reports for failed checks
+            if (checks != null && !checks.isEmpty()) {
+                bugReportService.createReports(
+                        result.getExecutionId(),
+                        request.getWebsiteUrl(),
+                        checks
+                );
+            }
 
             result.setStatus(
                     failed == 0
